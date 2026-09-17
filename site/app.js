@@ -40,7 +40,7 @@ function renderHero() {
     </article>
   </section>
   <section class="stats">
-    <div><b>${data.stats.publicFinished}</b><span>公开已读完</span></div>
+    <div><b>${esc(data.stats.finished)}</b><span>累计已读完</span></div>
     <div><b>${data.stats.shelf}</b><span>公开书架</span></div>
     <div><b>${esc(data.stats.totalTime)}</b><span>阅读时长</span></div>
     <div><b>${data.stats.noteCount}</b><span>笔记</span></div>
