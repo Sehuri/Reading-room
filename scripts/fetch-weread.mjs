@@ -84,11 +84,12 @@ async function mapLimit(items, limit, mapper) {
   return results;
 }
 
-const [shelf, notebooks, annual, overall] = await Promise.all([
+const [shelf, notebooks, annual, overall, apiList] = await Promise.all([
   weread("/shelf/sync"),
   allNotebooks(),
   weread("/readdata/detail", { mode: "annually", baseTime: 0 }),
   weread("/readdata/detail", { mode: "overall", baseTime: 0 }),
+  weread("/_list"),
 ]);
 
 const publicBooks = (shelf.books || [])
@@ -210,4 +211,5 @@ const output = {
 };
 
 await writeFile(new URL("../site/data.json", import.meta.url), JSON.stringify(output));
+await writeFile(new URL("../site/api-list.json", import.meta.url), JSON.stringify(apiList));
 console.log(`已生成 ${books.length} 本书、${notebookBooks.length} 本笔记书目的公开数据。`);
