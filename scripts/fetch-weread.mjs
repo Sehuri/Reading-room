@@ -102,17 +102,19 @@ progress.forEach((result, index) => {
   if (result.status === "fulfilled") progressMap.set(String(recent[index].bookId), result.value.book || {});
 });
 
-const books = publicBooks.slice(0, 60).map((book) => {
+const books = publicBooks.map((book) => {
   const p = progressMap.get(String(book.bookId));
-  const percentage = Number(p?.progress ?? (book.finishReading === 1 ? 100 : 0));
+  const isFinished = book.finishReading === 1;
+  const recordedProgress = Number(p?.progress ?? 0);
+  const hasStarted = recordedProgress > 0 || Number(book.readUpdateTime || 0) > 0;
   return {
     id: String(book.bookId),
     title: book.title,
     author: book.author || "佚名",
     cover: book.cover || "",
     category: book.category || "阅读",
-    progress: percentage,
-    status: percentage === 100 ? "读完" : percentage > 0 ? "在读" : "想读",
+    progress: isFinished ? 100 : recordedProgress,
+    status: isFinished ? "读完" : hasStarted ? "在读" : "想读",
     updatedAt: date(p?.updateTime || book.readUpdateTime),
     readingTime: duration(p?.recordReadingTime || 0),
     deepLink: book.deepLink || "",
@@ -177,7 +179,9 @@ const notebookBooks = await mapLimit(publicNotebooks, 4, async (item) => {
   };
 });
 
-const currentBook = books.find((book) => book.progress > 0 && book.progress < 100) || books[0] || null;
+const publicAlbums = (shelf.albums || []).filter((album) => album.albumInfoExtra?.secret !== 1);
+const publicFinished = publicBooks.filter((book) => book.finishReading === 1).length;
+const currentBook = books.find((book) => book.status === "在读") || null;
 const privateItemsExcluded =
   (shelf.books || []).filter((book) => book.secret === 1).length +
   (shelf.albums || []).filter((album) => album.albumInfoExtra?.secret === 1).length +
@@ -189,7 +193,9 @@ const output = {
   books,
   notebookBooks,
   stats: {
-    shelf: publicBooks.length,
+    shelf: publicBooks.length + publicAlbums.length,
+    publicBooks: publicBooks.length,
+    publicFinished,
     read: stat(overall.readStat, "读过"),
     finished: stat(overall.readStat, "读完"),
     totalTime: duration(overall.totalReadTime),

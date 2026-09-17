@@ -40,7 +40,7 @@ function renderHero() {
     </article>
   </section>
   <section class="stats">
-    <div><b>${esc(data.stats.read)}</b><span>读过</span></div>
+    <div><b>${esc(data.stats.finished)}</b><span>累计读完</span></div>
     <div><b>${data.stats.shelf}</b><span>公开书架</span></div>
     <div><b>${esc(data.stats.totalTime)}</b><span>阅读时长</span></div>
     <div><b>${data.stats.noteCount}</b><span>笔记</span></div>
@@ -51,12 +51,18 @@ function renderShelf() {
   const books = data.books.filter((book) =>
     (bookFilter === "全部" || book.status === bookFilter) &&
     `${book.title}${book.author}`.toLowerCase().includes(query.toLowerCase()));
+  const counts = {
+    "全部": data.books.length,
+    "在读": data.books.filter((book) => book.status === "在读").length,
+    "读完": data.books.filter((book) => book.status === "读完").length,
+    "想读": data.books.filter((book) => book.status === "想读").length,
+  };
   return `<section class="section">
-    <header class="section-head"><div><h2>我的书架</h2><p>最近同步的 ${data.books.length} 本公开书籍。</p></div>
-      <div class="filters">${["全部","在读","读完","想读"].map((item) => `<button data-book-filter="${item}" class="${bookFilter === item ? "active" : ""}">${item}</button>`).join("")}</div>
+    <header class="section-head"><div><h2>我的书架</h2><p>展示 ${data.stats.publicBooks} 本公开电子书，其中 ${data.stats.publicFinished} 本已标记读完。</p></div>
+      <div class="filters">${["全部","在读","读完","想读"].map((item) => `<button data-book-filter="${item}" class="${bookFilter === item ? "active" : ""}">${item}<span>${counts[item]}</span></button>`).join("")}</div>
     </header>
-    <div class="book-grid">${books.map((book) => `<article class="book">${cover(book)}<h3>${esc(book.title)}</h3><p>${esc(book.author)}</p><div class="bar"><i style="width:${book.progress}%"></i></div><small>${book.progress ? `${book.progress}%` : "在书架"}</small></article>`).join("")}</div>
-    ${books.length ? "" : `<p class="empty">没有找到匹配的书。</p>`}
+    <div class="book-grid">${books.map((book) => `<article class="book">${cover(book)}<h3>${esc(book.title)}</h3><p>${esc(book.author)}</p><div class="bar"><i style="width:${book.progress}%"></i></div><small>${book.status === "读完" ? "读完了" : book.progress > 0 ? `${book.progress}%` : book.status === "在读" ? "已开始" : "在书架"}</small></article>`).join("")}</div>
+    ${books.length ? "" : `<p class="empty">公开书架里没有找到符合条件的书。</p>`}
   </section>`;
 }
 
