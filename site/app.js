@@ -58,10 +58,10 @@ function renderShelf() {
     "想读": data.books.filter((book) => book.status === "想读").length,
   };
   return `<section class="section">
-    <header class="section-head"><div><h2>我的书架</h2><p>展示 ${data.stats.publicBooks} 本公开电子书，其中 ${data.stats.publicFinished} 本已标记读完。</p></div>
+    <header class="section-head"><div><h2>我的书架</h2><p>同步 ${data.stats.publicBooks} 本公开电子书${data.stats.archivedFinished ? `，另保留 ${data.stats.archivedFinished} 本下架馆藏。` : "。"}</p></div>
       <div class="filters">${["全部","在读","读完","想读"].map((item) => `<button data-book-filter="${item}" class="${bookFilter === item ? "active" : ""}">${item}<span>${counts[item]}</span></button>`).join("")}</div>
     </header>
-    <div class="book-grid">${books.map((book) => `<article class="book">${cover(book)}<h3>${esc(book.title)}</h3><p>${esc(book.author)}</p><div class="bar"><i style="width:${book.progress}%"></i></div><small>${book.status === "读完" ? "读完了" : book.progress > 0 ? `${book.progress}%` : book.status === "在读" ? "已开始" : "在书架"}</small></article>`).join("")}</div>
+    <div class="book-grid">${books.map((book) => `<article class="book">${cover(book)}<h3>${esc(book.title)}</h3><p>${esc(book.author)}</p><div class="bar"><i style="width:${book.progress}%"></i></div><small>${book.archived ? "读完了 · 馆藏补录" : book.status === "读完" ? "读完了" : book.progress > 0 ? `${book.progress}%` : book.status === "在读" ? "已开始" : "在书架"}</small></article>`).join("")}</div>
     ${books.length ? "" : `<p class="empty">公开书架里没有找到符合条件的书。</p>`}
   </section>`;
 }

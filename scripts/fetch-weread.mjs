@@ -3,6 +3,26 @@ import { writeFile } from "node:fs/promises";
 const ENDPOINT = "https://i.weread.qq.com/api/agent/gateway";
 const VERSION = "1.0.4";
 const key = process.env.WEREAD_API_KEY;
+const ARCHIVED_FINISHED_BOOKS = [
+  {
+    id: "3300025108",
+    title: "别的声音，别的房间",
+    author: "杜鲁门•卡波特",
+    cover: "https://cdn.weread.qq.com/weread/cover/77/cpPlatform_5mtSECccT61ewqxArCdoE5/t6_cpPlatform_5mtSECccT61ewqxArCdoE5.jpg",
+    category: "精品小说-情感小说",
+    deepLink: "https://weread.qq.com/book-detail?type=1&v=8bd32e20813ab704eg01862c",
+    updatedAt: "",
+  },
+  {
+    id: "35433088",
+    title: "弃猫：当我谈起父亲时",
+    author: "[日]村上春树",
+    cover: "https://cdn.weread.qq.com/weread/cover/34/YueWen_35433088/t6_YueWen_35433088.jpg",
+    category: "文学-散文杂著",
+    deepLink: "https://weread.qq.com/book-detail?type=1&v=6df328c0721caa806dfe015",
+    updatedAt: "2025-11-01",
+  },
+];
 
 if (!key) throw new Error("缺少 GitHub Secret：WEREAD_API_KEY");
 
@@ -102,7 +122,7 @@ progress.forEach((result, index) => {
   if (result.status === "fulfilled") progressMap.set(String(recent[index].bookId), result.value.book || {});
 });
 
-const books = publicBooks.map((book) => {
+const syncedBooks = publicBooks.map((book) => {
   const p = progressMap.get(String(book.bookId));
   const isFinished = book.finishReading === 1;
   const recordedProgress = Number(p?.progress ?? 0);
@@ -120,6 +140,17 @@ const books = publicBooks.map((book) => {
     deepLink: book.deepLink || "",
   };
 });
+const syncedBookIds = new Set(syncedBooks.map((book) => book.id));
+const archivedBooks = ARCHIVED_FINISHED_BOOKS
+  .filter((book) => !syncedBookIds.has(book.id))
+  .map((book) => ({
+    ...book,
+    progress: 100,
+    status: "读完",
+    readingTime: "0分钟",
+    archived: true,
+  }));
+const books = [...syncedBooks, ...archivedBooks];
 
 const publicNotebooks = notebooks.books.filter((item) => publicMap.has(String(item.bookId)));
 const notebookBooks = await mapLimit(publicNotebooks, 4, async (item) => {
@@ -196,6 +227,7 @@ const output = {
     shelf: publicBooks.length + publicAlbums.length,
     publicBooks: publicBooks.length,
     publicFinished,
+    archivedFinished: archivedBooks.length,
     read: stat(overall.readStat, "读过"),
     finished: stat(overall.readStat, "读完"),
     totalTime: duration(overall.totalReadTime),
