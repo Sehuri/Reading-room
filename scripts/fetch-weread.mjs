@@ -84,18 +84,28 @@ async function mapLimit(items, limit, mapper) {
   return results;
 }
 
-const [shelf, notebooks, annual, overall, apiList] = await Promise.all([
+const [shelf, notebooks, annual, overall] = await Promise.all([
   weread("/shelf/sync"),
   allNotebooks(),
   weread("/readdata/detail", { mode: "annually", baseTime: 0 }),
   weread("/readdata/detail", { mode: "overall", baseTime: 0 }),
-  weread("/_list"),
 ]);
 
 const publicBooks = (shelf.books || [])
   .filter((book) => book.secret !== 1)
   .sort((a, b) => (b.readUpdateTime || 0) - (a.readUpdateTime || 0));
 const publicMap = new Map(publicBooks.map((book) => [String(book.bookId), book]));
+const finishedNotebookBooksOutsideShelf = notebooks.books
+  .filter((item) => item.markedStatus === 1 && !publicMap.has(String(item.bookId)))
+  .map((item) => ({
+    bookId: String(item.bookId),
+    title: item.book?.title || "未命名书籍",
+    author: item.book?.author || "佚名",
+    cover: item.book?.cover || "",
+    readingProgress: Number(item.readingProgress || 0),
+    markedStatus: item.markedStatus,
+    sort: item.sort || 0,
+  }));
 const recent = publicBooks.slice(0, 5);
 const progress = await Promise.allSettled(recent.map((book) => weread("/book/getprogress", { bookId: book.bookId })));
 const progressMap = new Map();
@@ -211,5 +221,5 @@ const output = {
 };
 
 await writeFile(new URL("../site/data.json", import.meta.url), JSON.stringify(output));
-await writeFile(new URL("../site/api-list.json", import.meta.url), JSON.stringify(apiList));
+await writeFile(new URL("../site/finished-candidates.json", import.meta.url), JSON.stringify(finishedNotebookBooksOutsideShelf));
 console.log(`已生成 ${books.length} 本书、${notebookBooks.length} 本笔记书目的公开数据。`);
